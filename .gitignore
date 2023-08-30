@@ -3,7 +3,6 @@
 /node_modules
 .yarn
 .env
-pg-typed.config.json
 
 # Logs
 logs
@@ -29,3 +28,7 @@ lerna-debug.log*
 *.launch
 .settings/
 *.sublime-workspace
+
+# Application
+documentation
+pg-typed.config.json
