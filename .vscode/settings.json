@@ -12,7 +12,8 @@
   "material-icon-theme.files.associations": {
     "**.adapter.ts": "nest-resolver",
     "**.use-case.ts": "exe",
-    "**.contract.ts": "3d"
+    "**.contract.ts": "3d",
+    "**.config.ts": "settings"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.codeActionsOnSave": {
