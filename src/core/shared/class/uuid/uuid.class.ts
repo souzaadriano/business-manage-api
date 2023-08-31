@@ -7,7 +7,7 @@ export class Uuid {
     this.value = value;
   }
 
-  static factory() {
+  static create() {
     return new Uuid(randomUUID());
   }
 }
