@@ -9,6 +9,10 @@ export class DateTime {
     this.timestamp = date.getTime();
   }
 
+  static now() {
+    return new DateTime(new Date());
+  }
+
   isBetween(interval: TDateInterval): boolean {
     const { begin, end } = interval;
     if (this.isAfter(begin) && this.isBefore(end)) return true;
