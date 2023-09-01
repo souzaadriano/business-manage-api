@@ -1,12 +1,17 @@
 import { DateTime } from '../class/date-time/date-time.class';
 import { TJsonDocument, TJsonValue } from '../types/json-document.type';
 import { EXCEPTION_CODE } from './exception-code.enum';
+import { ExceptionNormalizer } from './exception.normalizer';
 
 export abstract class AbstractException extends Error {
   abstract readonly code: EXCEPTION_CODE;
   readonly issuedAt = DateTime.now();
   private readonly _forbbidenProperties = new Set(['_issuedAt', '_message', '_name', '_trace', '_code']);
   private readonly _details: Map<string, TJsonValue> = new Map();
+
+  static normalize(error: unknown): AbstractException {
+    return ExceptionNormalizer.handle(error);
+  }
 
   protected setDetail(key: string, value: TJsonValue) {
     if (this._forbbidenProperties.has(key)) throw new Error(``);
@@ -23,5 +28,9 @@ export abstract class AbstractException extends Error {
     details['_code'] = this.code;
 
     return details;
+  }
+
+  getDetail(key: string): TJsonValue | undefined {
+    return this._details.get(key);
   }
 }
