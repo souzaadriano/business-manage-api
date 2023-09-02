@@ -13,7 +13,8 @@
     "**.adapter.ts": "nest-resolver",
     "**.use-case.ts": "exe",
     "**.contract.ts": "3d",
-    "**.config.ts": "settings"
+    "**.config.ts": "settings",
+    "**.mock.ts": "playwright"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "editor.codeActionsOnSave": {
