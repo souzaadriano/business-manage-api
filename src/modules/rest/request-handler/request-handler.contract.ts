@@ -1,4 +1,4 @@
-import { IUseCase } from '@/core/shared/contracts/use-case.contract';
+import { IUseCase } from '@/core/shared/contracts/use-case/use-case.contract';
 import { UserSession } from '@/core/shared/entities/user-session.entity';
 import { RestResponseDTO } from '../dto/rest-response.dto';
 

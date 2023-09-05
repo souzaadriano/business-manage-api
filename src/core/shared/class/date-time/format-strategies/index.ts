@@ -3,7 +3,7 @@ import { DefaultDateFormatStrategy } from './default.strategy';
 import { PtBrDateFormatStrategy } from './pt-br.strategy';
 import { TimestampInSecondsStrategy } from './timestamp-in-seconds.strategy';
 
-const defaultDateFormatStrategy = new DefaultDateFormatStrategy();
+export const defaultDateFormatStrategy = new DefaultDateFormatStrategy();
 const ptBrDateFormatStrategy = new PtBrDateFormatStrategy();
 const timestampInSecondsStrategy = new TimestampInSecondsStrategy();
 

@@ -1,4 +1,4 @@
-import { IUseCase } from '@/core/shared/contracts/use-case.contract';
+import { IUseCase } from '@/core/shared/contracts/use-case/use-case.contract';
 import { HttpStatus, Injectable } from '@nestjs/common';
 import { RestResponseDTO } from '../dto/rest-response.dto';
 import { RestExceptionHandler } from '../exception-handler/rest-exception-handler.adapter';

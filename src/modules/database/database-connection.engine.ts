@@ -1,0 +1,110 @@
+import { databaseConfig } from '@/configuration';
+import { Stopwatch } from '@/core/shared/class/stopwatch/stopwatch.class';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { PreparedQuery } from '@pgtyped/runtime';
+import { Client } from 'pg';
+import { EventPublisher } from '../event/adapters/event-publisher/event-publisher.adapter';
+import { DATABASE_OPERATION } from './database-operation.enum';
+import { DatabaseQueryEvent } from './events/database.event';
+import { DatabaseQueryException } from './exceptions/database-query.exception';
+
+@Injectable()
+export class DatabaseConnectionEngine implements OnModuleInit {
+  private readonly configuration = databaseConfig;
+  private _client: Client;
+
+  constructor(private readonly _eventPublisher: EventPublisher) {}
+
+  async onModuleInit() {
+    this._client = new Client({
+      host: this.configuration.host,
+      port: this.configuration.port,
+      password: this.configuration.password,
+      user: this.configuration.user,
+      database: this.configuration.name,
+    });
+
+    await this._client.connect();
+  }
+
+  async dbUsers() {
+    const stopwatch = Stopwatch.create('query');
+    const data = await this._client.query('select * from pg_catalog.pg_settings').then((data) => data.rows);
+    const { total, steps } = stopwatch.result();
+    console.log(stopwatch.name, { total, steps });
+    this._eventPublisher.publish(
+      new DatabaseQueryEvent({
+        executeTimeInMs: total,
+        operation: DATABASE_OPERATION.SELECT,
+        statement: 'dbUsers',
+      }),
+    );
+    return data;
+  }
+
+  insert<INPUT, OUTPUT>(statement: string, fn: PreparedQuery<INPUT, OUTPUT>): TExecuteCommand<INPUT> {
+    return this._execute(statement, DATABASE_OPERATION.INSERT, fn);
+  }
+
+  delete<INPUT, OUTPUT>(statement: string, fn: PreparedQuery<INPUT, OUTPUT>): TExecuteCommand<INPUT> {
+    return this._execute(statement, DATABASE_OPERATION.DELETE, fn);
+  }
+
+  update<INPUT, OUTPUT>(statement: string, fn: PreparedQuery<INPUT, OUTPUT>): TExecuteCommand<INPUT> {
+    return this._execute(statement, DATABASE_OPERATION.UPDATE, fn);
+  }
+
+  select<INPUT, OUTPUT>(statement: string, fn: PreparedQuery<INPUT, OUTPUT>): TQueryCommand<INPUT, OUTPUT[]> {
+    return this._query(statement, DATABASE_OPERATION.SELECT, fn);
+  }
+
+  first<INPUT, OUTPUT>(statement: string, fn: PreparedQuery<INPUT, OUTPUT>): TQueryCommand<INPUT, OUTPUT> {
+    return this._queryOne(statement, DATABASE_OPERATION.SELECT, fn);
+  }
+
+  upsert<INPUT, OUTPUT>(statement: string, fn: PreparedQuery<INPUT, OUTPUT>): TExecuteCommand<INPUT> {
+    return this._execute(statement, DATABASE_OPERATION.UPSERT, fn);
+  }
+
+  private _query<INPUT, OUTPUT>(statement: string, operation: DATABASE_OPERATION, fn: PreparedQuery<INPUT, OUTPUT>) {
+    return async (params: INPUT): Promise<OUTPUT[]> => {
+      try {
+        const stopwatch = Stopwatch.create('query');
+        const data = fn.run(params, this._client);
+        const { total } = stopwatch.result();
+        await this._publishQueryEvents(total, operation, statement);
+        return data;
+      } catch (error) {
+        console.error(error);
+        throw new DatabaseQueryException({ error, operation, statement });
+      }
+    };
+  }
+
+  private async _publishQueryEvents(
+    executeTimeInMs: number,
+    operation: DATABASE_OPERATION,
+    statement: string,
+  ): Promise<void> {
+    const event = new DatabaseQueryEvent({ executeTimeInMs, operation, statement });
+    await this._eventPublisher.publish(event);
+  }
+
+  private _queryOne<INPUT, OUTPUT>(statement: string, operation: DATABASE_OPERATION, fn: PreparedQuery<INPUT, OUTPUT>) {
+    const executor = this._query(statement, operation, fn);
+    return async (params: INPUT): Promise<OUTPUT | undefined> => {
+      const [output] = await executor(params);
+      return output;
+    };
+  }
+
+  private _execute<INPUT, OUTPUT>(statement: string, operation: DATABASE_OPERATION, fn: PreparedQuery<INPUT, OUTPUT>) {
+    const executor = this._query(statement, operation, fn);
+    return async (params: INPUT): Promise<void> => {
+      await executor(params);
+    };
+  }
+}
+
+export type TExecuteCommand<INPUT> = (params: INPUT) => Promise<void>;
+export type TQueryCommand<INPUT, OUTPUT> = (params: INPUT) => Promise<OUTPUT>;

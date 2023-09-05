@@ -1,5 +1,6 @@
 import { DATE_FORMAT } from './date-format.enum';
 import { TDateInterval } from './date-interval.type';
+import { InvalidTimestampException } from './exceptions/invalid-timestamp.exception';
 import { FormatStrategyHandler } from './format-strategies/format-strategy.handler';
 
 export class DateTime {
@@ -11,6 +12,11 @@ export class DateTime {
 
   static now() {
     return new DateTime(new Date());
+  }
+
+  static fromTimestamp(timestamp: number) {
+    if (Number.isNaN(timestamp)) throw new InvalidTimestampException(timestamp);
+    return new DateTime(new Date(timestamp));
   }
 
   isBetween(interval: TDateInterval): boolean {

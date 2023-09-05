@@ -14,6 +14,7 @@ export abstract class ExceptionNormalizer {
   ];
 
   static handle(error: unknown): AbstractException {
+    console.log('ERROR', error);
     const strategy = ExceptionNormalizer._strategies.find((strategy) => strategy.shouldUse(error));
     return strategy ? strategy.handle(error) : ExceptionNormalizer._unknownStrategy.handle(error);
   }

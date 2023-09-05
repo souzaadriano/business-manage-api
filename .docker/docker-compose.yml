@@ -1,5 +1,13 @@
 version: '3.8'
 
+volumes:
+  grafana_data:
+  prometheus_data:
+
+networks:
+  monitoring:
+    external: true
+
 services:
   postgres:
     image: postgres:alpine
@@ -17,3 +25,38 @@ services:
     command: redis-server --requirepass redis_pass
     ports:
       - '6002:6379'
+
+  grafana:
+    image: grafana/grafana:9.1.6
+    container_name: grafana
+    restart: always
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./data/grafana/provisioning:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-worldmap-panel,percona-percona-app
+    ports:
+      - 6003:3000
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:v2.37.1
+    container_name: prometheus
+    restart: always
+    volumes:
+      - ./data/prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=360h'
+      - '--web.enable-lifecycle'
+    ports:
+      - 6004:9090
+    networks:
+      - monitoring
