@@ -1,12 +1,12 @@
 import { DateTime } from '../date-time/date-time.class';
 import { Uuid } from '../uuid/uuid.class';
 import { NegativeTimestampException } from './exceptions/negative-timestamp.exception';
-import { PID_CONTEXT, pidContextHelper } from './pid-context.enum';
+import { pidContextHelper } from './pid-context.enum';
 
 export class Pid {
   private readonly _id: Uuid;
   readonly date: DateTime;
-  readonly context: PID_CONTEXT;
+  readonly context: string;
 
   constructor(input: TPidConstructor) {
     this._isNotNegativeTimestamp(input.date);
@@ -15,7 +15,7 @@ export class Pid {
     this.context = input.context;
   }
 
-  static create(context: PID_CONTEXT) {
+  static create(context: string) {
     return new Pid({
       context: context,
       date: DateTime.now(),
@@ -45,5 +45,5 @@ export class Pid {
 export type TPidConstructor = {
   id: Uuid;
   date: DateTime;
-  context: PID_CONTEXT;
+  context: string;
 };

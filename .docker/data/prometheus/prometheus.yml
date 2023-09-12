@@ -11,4 +11,4 @@ scrape_configs:
 
     metrics_path: /metrics # Endpoint padrão para a raspagem das métricas
     static_configs:
-      - targets: ['localhost:6004', localhost:6100]
+      - targets: ['localhost:9090']

@@ -3,9 +3,8 @@ import { Stopwatch } from '@/core/shared/class/stopwatch/stopwatch.class';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PreparedQuery } from '@pgtyped/runtime';
 import { Client } from 'pg';
-import { EventPublisher } from '../event/adapters/event-publisher/event-publisher.adapter';
+import { LoggerService } from '../logger/adapters/logger.adapter';
 import { DATABASE_OPERATION } from './database-operation.enum';
-import { DatabaseQueryEvent } from './events/database.event';
 import { DatabaseQueryException } from './exceptions/database-query.exception';
 
 @Injectable()
@@ -13,7 +12,7 @@ export class DatabaseConnectionEngine implements OnModuleInit {
   private readonly configuration = databaseConfig;
   private _client: Client;
 
-  constructor(private readonly _eventPublisher: EventPublisher) {}
+  constructor(private readonly _logger: LoggerService) {}
 
   async onModuleInit() {
     this._client = new Client({
@@ -25,21 +24,6 @@ export class DatabaseConnectionEngine implements OnModuleInit {
     });
 
     await this._client.connect();
-  }
-
-  async dbUsers() {
-    const stopwatch = Stopwatch.create('query');
-    const data = await this._client.query('select * from pg_catalog.pg_settings').then((data) => data.rows);
-    const { total, steps } = stopwatch.result();
-    console.log(stopwatch.name, { total, steps });
-    this._eventPublisher.publish(
-      new DatabaseQueryEvent({
-        executeTimeInMs: total,
-        operation: DATABASE_OPERATION.SELECT,
-        statement: 'dbUsers',
-      }),
-    );
-    return data;
   }
 
   insert<INPUT, OUTPUT>(statement: string, fn: PreparedQuery<INPUT, OUTPUT>): TExecuteCommand<INPUT> {
@@ -72,22 +56,13 @@ export class DatabaseConnectionEngine implements OnModuleInit {
         const stopwatch = Stopwatch.create('query');
         const data = fn.run(params, this._client);
         const { total } = stopwatch.result();
-        await this._publishQueryEvents(total, operation, statement);
+        this._logger.print('database', { elapsedTime: total, operation, statement });
         return data;
       } catch (error) {
         console.error(error);
         throw new DatabaseQueryException({ error, operation, statement });
       }
     };
-  }
-
-  private async _publishQueryEvents(
-    executeTimeInMs: number,
-    operation: DATABASE_OPERATION,
-    statement: string,
-  ): Promise<void> {
-    const event = new DatabaseQueryEvent({ executeTimeInMs, operation, statement });
-    await this._eventPublisher.publish(event);
   }
 
   private _queryOne<INPUT, OUTPUT>(statement: string, operation: DATABASE_OPERATION, fn: PreparedQuery<INPUT, OUTPUT>) {

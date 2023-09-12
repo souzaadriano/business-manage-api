@@ -3,7 +3,7 @@
 /node_modules
 .yarn
 .env
-
+/log
 # Logs
 logs
 *.log

@@ -1,8 +1,10 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { initLogMessageCls } from 'logmessage-cls-hooked';
 import { AppModule } from './app.module';
 import { appConfig } from './configuration';
 
+initLogMessageCls();
 const main = async () => {
   //otelSDK.start();
 

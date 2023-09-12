@@ -1,14 +1,14 @@
-import { DatabaseConnectionEngine } from '@/modules/database/database-connection.engine';
+import { RequestHandler } from '@/modules/rest/decorators/request-handler/request-handler.decorator';
+import { RestHandler } from '@/modules/rest/rest-hanlder.class';
 import { Controller, Get } from '@nestjs/common';
-import { HealthService } from './health.service';
+import { HealthUseCase } from './health.use-case';
 
 @Controller('/health')
 export class HealthController {
-  constructor(private readonly _service: HealthService, private readonly db: DatabaseConnectionEngine) {}
+  constructor(private readonly _healthUseCase: HealthUseCase) {}
 
   @Get()
-  async healthCheck() {
-    this._service.emitHealth();
-    return this.db.dbUsers();
+  async healthCheck(@RequestHandler() handler: RestHandler) {
+    return await handler.handle(this._healthUseCase, undefined);
   }
 }

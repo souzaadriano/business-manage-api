@@ -17,12 +17,16 @@ export class Stopwatch {
   }
 
   step(label: string) {
-    this._steps.set(label, this._elapsedTime());
+    const elapsedTime = this._elapsedTime();
+    this._steps.set(label, elapsedTime);
+    return elapsedTime;
   }
 
   stop() {
+    const elapsedTime = this._elapsedTime();
     this._stoped = true;
-    this._steps.set('end', this._elapsedTime());
+    this._steps.set('end', elapsedTime);
+    return elapsedTime;
   }
 
   private _calculate() {

@@ -1,13 +1,11 @@
-import { DatabaseModule } from '@/modules/database/database.module';
-import { EventModule } from '@/modules/event/event.module';
+import { LoggerModule } from '@/modules/logger/logger.module';
 import { Module } from '@nestjs/common';
 import { HealthController } from './health.controller';
-import { HealthListner } from './health.listner';
-import { HealthService } from './health.service';
+import { HealthUseCase } from './health.use-case';
 
 @Module({
-  imports: [EventModule, DatabaseModule],
+  imports: [LoggerModule],
   controllers: [HealthController],
-  providers: [HealthService, HealthListner],
+  providers: [HealthUseCase],
 })
 export class HealthModule {}

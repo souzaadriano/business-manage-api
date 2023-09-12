@@ -1,0 +1,3 @@
+export enum EXCEPTION_DETAILS {
+  REASON = 'REASON',
+}

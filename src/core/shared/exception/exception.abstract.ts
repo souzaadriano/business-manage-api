@@ -1,6 +1,3 @@
-import { defaultDateFormatStrategy } from '../class/date-time/format-strategies';
-import { PID_CONTEXT } from '../class/pid/pid-context.enum';
-import { Pid } from '../class/pid/pid.class';
 import { TJsonDocument, TJsonValue } from '../types/json-document.type';
 import { EXCEPTION_CODE } from './exception-code.enum';
 
@@ -9,11 +6,11 @@ export abstract class AbstractException extends Error {
   readonly issuedAt = new Date(); // DateTime.now();
   private readonly _forbbidenProperties = new Set(['_issuedAt', '_message', '_name', '_trace', '_code']);
   private readonly _details = new Map<string, TJsonValue>();
-  readonly pid: Pid;
+  readonly pid: string;
 
-  constructor(message: string, pid?: Pid) {
+  constructor(message: string, pid?: string) {
     super(message);
-    this.pid = pid ?? Pid.create(PID_CONTEXT.EXCEPTION);
+    this.pid = pid ?? 'UNKNOWN_PROCESS_ID';
   }
 
   protected setDetail(key: string, value: TJsonValue) {
@@ -23,7 +20,7 @@ export abstract class AbstractException extends Error {
 
   getDetails(): TJsonDocument {
     const details = Object.fromEntries(this._details.entries());
-    details['_issuedAt'] = defaultDateFormatStrategy.handle(this.issuedAt); //this.issuedAt.format();
+    details['_issuedAt'] = this.issuedAt.toISOString(); //defaultDateFormatStrategy.handle(this.issuedAt); //this.issuedAt.format();
     details['_message'] = this.message;
     details['_name'] = this.name;
     details['_trace'] = this.stack;
