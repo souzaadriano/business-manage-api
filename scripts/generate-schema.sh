@@ -1,9 +1,9 @@
-mkdir -p ./src/engines/database/models/temp
+mkdir -p ./database/models/temp
 
-for file in ./src/engines/database/models/*.prisma; do
-    sed '/\/\/@relations/,$d' "$file" > "./src/engines/database/models/temp/$(basename "$file")"
+for file in ./database/models/*.prisma; do
+    sed '/\/\/@relations/,$d' "$file" > "./database/models/temp/$(basename "$file")"
 done
 
-cat ./src/engines/database/models/connection.config ./src/engines/database/models/temp/*.prisma > ./src/engines/database/schema.prisma
-rm -rf ./src/engines/database/models/temp
+cat ./database/models/connection.config ./database/models/temp/*.prisma > ./database/schema.prisma
+rm -rf ./database/models/temp
 yarn format:schema

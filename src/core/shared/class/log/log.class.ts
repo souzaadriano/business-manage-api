@@ -17,8 +17,11 @@ export class Log {
   private constructor(context: string, pid: Pid) {
     this.pid = pid;
     this.context = context;
-    this._data = new Map([['context', context]]);
     this._stopwatch = Stopwatch.create(context);
+    this._data = new Map([
+      ['context', context],
+      ['pid', pid.value],
+    ]);
   }
 
   static create(context: string, pid: Pid) {

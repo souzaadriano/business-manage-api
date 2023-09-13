@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  grafana:
+    image: grafana/grafana:9.1.6
+    restart: always
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-worldmap-panel,percona-percona-app
+    ports:
+      - 6003:3000
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - 3100:3100
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - monitoring
+
+  promtail:
+    image:  grafana/promtail:latest
+    container_name: promtail
+    ports:
+      - 9080:9080
+    volumes:
+      - ./config/promtail.yml:/etc/promtail/config.yaml
+      - ../log:/logs
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    networks:
+      - monitoring
+
+    
+
+volumes:
+  grafana_data:
+  prometheus_data:
+
+networks:
+  monitoring:
+    external: true
