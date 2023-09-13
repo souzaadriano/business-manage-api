@@ -5,6 +5,7 @@ import { PreparedQuery } from '@pgtyped/runtime';
 import { Client } from 'pg';
 import { LoggerService } from '../logger/adapters/logger.adapter';
 import { DATABASE_OPERATION } from './database-operation.enum';
+import { DatabaseInstrumentation } from './database.instrumentation';
 import { DatabaseQueryException } from './exceptions/database-query.exception';
 
 @Injectable()
@@ -52,15 +53,20 @@ export class DatabaseConnectionEngine implements OnModuleInit {
 
   private _query<INPUT, OUTPUT>(statement: string, operation: DATABASE_OPERATION, fn: PreparedQuery<INPUT, OUTPUT>) {
     return async (params: INPUT): Promise<OUTPUT[]> => {
+      const instrumentation = new DatabaseInstrumentation(this._logger);
+      instrumentation.setOperation(operation);
+      instrumentation.setStatement(statement);
       try {
         const stopwatch = Stopwatch.create('query');
         const data = fn.run(params, this._client);
         const { total } = stopwatch.result();
-        this._logger.print('database', { elapsedTime: total, operation, statement });
+        instrumentation.setExecutionTime(total);
+        instrumentation.emit();
         return data;
       } catch (error) {
-        console.error(error);
-        throw new DatabaseQueryException({ error, operation, statement });
+        const exception = new DatabaseQueryException({ error, operation, statement });
+        instrumentation.setException(exception);
+        throw exception;
       }
     };
   }

@@ -1,0 +1,7 @@
+export enum REDIS_OPERATION {
+  GET_OBJECT = 'GET_OBJECT',
+  SET_OBJECT = 'SET_OBJECT',
+  GET = 'GET',
+  SET = 'SET',
+  EXPIRE = 'EXPIRE',
+}
