@@ -1,73 +1,141 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Boilerplate para projetos usando nest js
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+# Modulos
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Database
 
-## Description
+### Tecnologias
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- [PGTyped](https://pgtyped.dev/docs/)
+- [Prisma](https://www.prisma.io/docs)
 
-## Installation
+O modulo de banco de dados utilza por padrão o pgtyped para criar e realizar consultas, e o utiliza o primsa para migrations
 
-```bash
-$ yarn install
+### How To Use
+
+Na raiza do projeto temos a pasta database, onde colocaremos nossas migrations e nossos modelos do bancos e por fim a pasta script com o script que gera o arquivo schema.prisma
+
+> Como funciona o schema modular ?
+
+na pasta models, criamos os modelos de forma separadas, assim conseguimos modularizar e termos arquivos mais simples e coesos.
+para que isso funcione é preciso seguir algumas pequenas regras nas relações e definições do banco.
+
+Exemplo
+
+`database/models/users.prisma`
+
+```prisma
+model Users {
+  id String @id
+  name String
+  email String @unique
+  hash String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  deletedAt DateTime?
+
+  @@index([email])
+  @@map("users")
+}
 ```
 
-## Running the app
+`database/models/profile.prisma`
 
-```bash
-# development
-$ yarn run start
+```prisma
+model Profile {
+  id String @id
+  userId String
+  firstName String
+  lastName String
+  phone String
+  avatar String
+  address String
 
-# watch mode
-$ yarn run start:dev
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  deletedAt DateTime?
 
-# production mode
-$ yarn run start:prod
+  user  Users  @relation(fields: [userId], references: [id])
+
+  @@index([email])
+  @@map("users")
+}
+
+//@relations
+model Users {
+    id        String      @id
+    profile Profile
+
+    @@map("users")
+}
 ```
 
-## Test
+Tudo que vem após `//@relations` é descartado pelo script quando ele gera o schema.prisma, e é feito um format após para que o arquivo automaticamente adicione os campos e relações na model de users
 
-```bash
-# unit tests
-$ yarn run test
+o script é chamado através do arquivo makefile com o comando make schema
 
-# e2e tests
-$ yarn run test:e2e
+### criando as suas queries para o database com o pgtyped
 
-# test coverage
-$ yarn run test:cov
+na pasta `src/modules/database/sql` temos os arquivos `.sql` com as queries que serão transformadas em funções pelo pgtyped
+
+```sql
+/* @name createUser */
+INSERT INTO
+    "users" (
+        "id",
+        "name",
+        "email",
+        "hash",
+        "createdAt",
+        "updatedAt",
+        "deletedAt"
+    )
+VALUES
+    (
+        :id,
+        :name,
+        :email,
+        :hash,
+        :createdAt,
+        :updatedAt,
+        :deletedAt
+    );
 ```
 
-## Support
+após usar o comando `yarn generate:queires` ou `npm run generate:queries` ele irá gerar as queries na pasta `src/modules/database/queries`
+após isso ja é possivel utilzar as funções geradas para consultar o banco, porem para uma melhor integração utilizaremos a pasta DAO `src/modules/database/dao`
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```typescript
+import { Injectable } from '@nestjs/common';
+import { DatabaseConnectionEngine } from '../database-connection.engine';
+import { createUser, findByEmail, findById, softDeleteUser, updateUser } from '../queries/users.queries';
 
-## Stay in touch
+@Injectable()
+export class UsersDAO {
+  constructor(private readonly _engine: DatabaseConnectionEngine) {}
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+  public readonly createUser = this._engine.insert('createUser', createUser);
+}
+```
 
-## License
+todos os arquivos de dao devem ser adicionados no arquivo dao.provider.ts, que será adicionado ao modulo do banco e exportado.
+`src/modules/database/dao/dao.provider.ts`
 
-Nest is [MIT licensed](LICENSE).
+```typescript
+import { UsersDAO } from './users.dao';
+import { SomeDAO } from './some.dao';
+export const DaoProviders = [UsersDAO, SomeDAO];
+```
+
+```typescript
+@Injectable()
+export class UsersRepository {
+  constructor(private readonly _usersDao: UsersDAO) {}
+
+  async createUser(user: User) {
+    await this._usersDao.createUser(user);
+  }
+}
+```
+
+## Redis
